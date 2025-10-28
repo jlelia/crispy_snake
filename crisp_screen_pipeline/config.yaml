@@ -1,0 +1,48 @@
+# Configuration file for CRISPR screen analysis pipeline
+
+# Sample information
+samples:
+  # Example format:
+  # - name: "control_rep1"
+  #   fastq: "data/fastq/control_rep1.fastq.gz"
+  # - name: "treated_rep1"
+  #   fastq: "data/fastq/treated_rep1.fastq.gz"
+
+# sgRNA library file
+library:
+  file: "data/library/library.txt"
+  # Format: tab-separated file with columns: sgRNA_ID, sequence, gene
+  
+# Analysis parameters
+params:
+  # Quality control
+  qc:
+    min_quality: 20
+    min_length: 18
+    
+  # Read counting
+  counting:
+    mismatches: 0  # Number of allowed mismatches when mapping reads to library
+    
+  # MAGeCK parameters
+  mageck:
+    fdr_threshold: 0.25
+    norm_method: "median"  # Options: median, total, control
+    
+  # DrugZ parameters
+  drugz:
+    remove_genes: []  # List of genes to exclude from analysis
+    pseudocount: 5
+    min_observations: 1
+
+# Comparisons for differential analysis
+comparisons:
+  # Example format:
+  # - name: "treatment_vs_control"
+  #   treatment: ["treated_rep1", "treated_rep2"]
+  #   control: ["control_rep1", "control_rep2"]
+
+# Output options
+output:
+  generate_plots: true
+  generate_reports: true
