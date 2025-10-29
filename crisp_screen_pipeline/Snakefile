@@ -52,11 +52,12 @@ rule trim_fastq:
         "results/qc/logs/{sample}_trim.log"
     shell:
         """
+        mkdir -p results/qc/logs
         python scripts/trim_fastq.py \
             --input {input.fastq} \
             --output {output.trimmed} \
             --length {params.length} \
-            2>&1 | tee {log}
+            2>&1 | tee "{log}"
         """
 
 
@@ -74,7 +75,8 @@ rule fastqc:
         "results/qc/logs/{sample}_fastqc.log"
     shell:
         """
-        fastqc {input.fastq} -o results/qc/ -t {threads} 2>&1 | tee {log}
+        mkdir -p results/qc/logs
+        fastqc {input.fastq} -o results/qc/ -t {threads} 2>&1 | tee "{log}"
         """
 
 
@@ -93,12 +95,13 @@ rule count_sgrnas:
         "results/counts/logs/{sample}_count.log"
     shell:
         """
+        mkdir -p results/counts/logs results/counts/samples
         python scripts/count_sgrnas.py \
             --fastq {input.fastq} \
             --library {input.library} \
             --output {output.counts} \
             --mismatches {params.mismatches} \
-            2>&1 | tee {log}
+            2>&1 | tee "{log}"
         """
 
 
@@ -134,14 +137,15 @@ rule mageck_test:
         "results/mageck/logs/{comparison}_mageck.log"
     shell:
         """
+        mkdir -p results/mageck/logs
         mageck test \
             -k {input.counts} \
             -t {params.treatment} \
             -c {params.control} \
-            -n results/mageck/{wildcards.comparison} \
+            -n "results/mageck/{wildcards.comparison}" \
             --norm-method {params.norm_method} \
             --gene-test-fdr-threshold {params.fdr} \
-            2>&1 | tee {log}
+            2>&1 | tee "{log}"
         """
 
 
@@ -178,8 +182,9 @@ rule generate_report:
         "results/reports/logs/generate_report.log"
     shell:
         """
+        mkdir -p results/reports/logs
         python scripts/generate_report.py \
             --counts {input.counts} \
             --output {output.report} \
-            2>&1 | tee {log}
+            2>&1 | tee "{log}"
         """
