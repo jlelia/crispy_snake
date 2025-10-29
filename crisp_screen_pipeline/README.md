@@ -54,6 +54,46 @@ cd crispy_snake/crisp_screen_pipeline
 conda install -c conda-forge -c bioconda snakemake
 ```
 
+## Naming Conventions (Required)
+
+**All names in the configuration file must follow strict naming rules to ensure compatibility with analysis tools.**
+
+### Allowed Characters
+
+Names (sample names, comparison names, treatment/control labels) may only contain:
+- Letters (A-Z, a-z)
+- Numbers (0-9)
+- Dots (.)
+- Underscores (_)
+- Dashes (-)
+
+**Spaces and other special characters are NOT allowed.**
+
+### Valid Examples
+```yaml
+✓ control_rep1
+✓ treated_rep2
+✓ MMC_vs_DMSO
+✓ treatment-vs-control
+✓ exp.2024.batch1
+✓ sample_A1
+```
+
+### Invalid Examples
+```yaml
+✗ control rep1          # contains space
+✗ treated(rep2)         # contains parentheses
+✗ MMC vs DMSO           # contains spaces
+✗ treatment/control     # contains forward slash
+✗ sample@A1             # contains @ symbol
+```
+
+### Why These Rules?
+
+The pipeline uses various bioinformatics tools (like MAGeCK RRA) that parse filenames and can break when encountering spaces or special characters. By enforcing these naming conventions early, we prevent pipeline failures and ensure reliable analysis.
+
+**The pipeline will validate all names at startup and fail immediately with a clear error message if any invalid characters are detected.**
+
 ## Configuration
 
 Edit `config.yaml` to specify your experimental setup:
