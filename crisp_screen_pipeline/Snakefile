@@ -1,0 +1,153 @@
+"""
+Snakemake workflow for CRISPR screen analysis
+Processes FASTQ files through QC, counting, and differential analysis
+"""
+
+import os
+from pathlib import Path
+
+# Load configuration
+configfile: "config.yaml"
+
+# Extract sample names
+SAMPLES = [s["name"] for s in config["samples"]]
+COMPARISONS = [c["name"] for c in config.get("comparisons", [])]
+
+# Target rule - defines all final outputs
+rule all:
+    input:
+        # Quality control reports
+        expand("results/qc/{sample}_fastqc.html", sample=SAMPLES),
+        # Count tables
+        "results/counts/merged_counts.txt",
+        # MAGeCK results
+        expand("results/mageck/{comparison}.gene_summary.txt", comparison=COMPARISONS) if COMPARISONS else [],
+        # DrugZ results
+        expand("results/drugz/{comparison}_drugz.txt", comparison=COMPARISONS) if COMPARISONS else [],
+        # Final report
+        "results/reports/analysis_summary.html" if config.get("output", {}).get("generate_reports", True) else []
+
+
+# Rule: Quality control with FastQC
+rule fastqc:
+    input:
+        fastq=lambda wildcards: [s["fastq"] for s in config["samples"] if s["name"] == wildcards.sample][0]
+    output:
+        html="results/qc/{sample}_fastqc.html",
+        zip="results/qc/{sample}_fastqc.zip"
+    conda:
+        "envs/env_qc.yaml"
+    threads: 2
+    log:
+        "results/qc/logs/{sample}_fastqc.log"
+    shell:
+        """
+        fastqc {input.fastq} -o results/qc/ -t {threads} 2>&1 | tee {log}
+        """
+
+
+# Rule: Extract and count sgRNA sequences
+rule count_sgrnas:
+    input:
+        fastq=lambda wildcards: [s["fastq"] for s in config["samples"] if s["name"] == wildcards.sample][0],
+        library=config["library"]["file"]
+    output:
+        counts="results/counts/{sample}_counts.txt"
+    conda:
+        "envs/env_python.yaml"
+    params:
+        mismatches=config["params"]["counting"]["mismatches"]
+    log:
+        "results/counts/logs/{sample}_count.log"
+    shell:
+        """
+        python scripts/count_sgrnas.py \
+            --fastq {input.fastq} \
+            --library {input.library} \
+            --output {output.counts} \
+            --mismatches {params.mismatches} \
+            2>&1 | tee {log}
+        """
+
+
+# Rule: Merge count tables from all samples
+rule merge_counts:
+    input:
+        counts=expand("results/counts/{sample}_counts.txt", sample=SAMPLES)
+    output:
+        merged="results/counts/merged_counts.txt"
+    conda:
+        "envs/env_python.yaml"
+    log:
+        "results/counts/logs/merge_counts.log"
+    script:
+        "scripts/merge_counts.py"
+
+
+# Rule: Run MAGeCK analysis
+rule mageck_test:
+    input:
+        counts="results/counts/merged_counts.txt"
+    output:
+        gene_summary="results/mageck/{comparison}.gene_summary.txt",
+        sgrna_summary="results/mageck/{comparison}.sgrna_summary.txt"
+    conda:
+        "envs/env_mageck.yaml"
+    params:
+        treatment=lambda wildcards: ",".join([c["treatment"] for c in config["comparisons"] if c["name"] == wildcards.comparison][0]),
+        control=lambda wildcards: ",".join([c["control"] for c in config["comparisons"] if c["name"] == wildcards.comparison][0]),
+        norm_method=config["params"]["mageck"]["norm_method"],
+        fdr=config["params"]["mageck"]["fdr_threshold"]
+    log:
+        "results/mageck/logs/{comparison}_mageck.log"
+    shell:
+        """
+        mageck test \
+            -k {input.counts} \
+            -t {params.treatment} \
+            -c {params.control} \
+            -n results/mageck/{wildcards.comparison} \
+            --norm-method {params.norm_method} \
+            --gene-test-fdr-threshold {params.fdr} \
+            2>&1 | tee {log}
+        """
+
+
+# Rule: Run DrugZ analysis
+rule drugz_analysis:
+    input:
+        counts="results/counts/merged_counts.txt"
+    output:
+        results="results/drugz/{comparison}_drugz.txt"
+    conda:
+        "envs/env_python.yaml"
+    params:
+        treatment=lambda wildcards: [c["treatment"] for c in config["comparisons"] if c["name"] == wildcards.comparison][0],
+        control=lambda wildcards: [c["control"] for c in config["comparisons"] if c["name"] == wildcards.comparison][0],
+        pseudocount=config["params"]["drugz"]["pseudocount"],
+        min_obs=config["params"]["drugz"]["min_observations"]
+    log:
+        "results/drugz/logs/{comparison}_drugz.log"
+    script:
+        "scripts/run_drugz.py"
+
+
+# Rule: Generate analysis summary report
+rule generate_report:
+    input:
+        counts="results/counts/merged_counts.txt",
+        mageck=expand("results/mageck/{comparison}.gene_summary.txt", comparison=COMPARISONS) if COMPARISONS else [],
+        drugz=expand("results/drugz/{comparison}_drugz.txt", comparison=COMPARISONS) if COMPARISONS else []
+    output:
+        report="results/reports/analysis_summary.html"
+    conda:
+        "envs/env_python.yaml"
+    log:
+        "results/reports/logs/generate_report.log"
+    shell:
+        """
+        python scripts/generate_report.py \
+            --counts {input.counts} \
+            --output {output.report} \
+            2>&1 | tee {log}
+        """

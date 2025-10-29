@@ -1,0 +1,11 @@
+name: crispr_mageck
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - mageck=0.5.9.4
+  - python=3.9
+  - numpy
+  - scipy
+  - matplotlib-base
