@@ -14,27 +14,10 @@ SAMPLES = [s["name"] for s in config["samples"]]
 COMPARISONS = [c["name"] for c in config.get("comparisons", [])]
 
 
-# Helper functions
+# Helper function to get original FASTQ path
 def get_fastq(sample):
     """Get the original FASTQ path for a sample"""
     return [s["fastq"] for s in config["samples"] if s["name"] == sample][0]
-
-
-def get_trimmed_fastq(sample):
-    """Get the trimmed FASTQ path for a sample"""
-    original_fastq = get_fastq(sample)
-    fastq_path = Path(original_fastq)
-    
-    # Remove all extensions (.fastq.gz, .fq.gz, .fastq, .fq)
-    stem = fastq_path.name
-    for ext in ['.fastq.gz', '.fq.gz', '.fastq', '.fq']:
-        if stem.endswith(ext):
-            stem = stem[:-len(ext)]
-            break
-    
-    # Create trimmed filename in same directory as original
-    trimmed_name = f"{stem}_trimmed.fastq.gz"
-    return str(fastq_path.parent / trimmed_name)
 
 
 # Prefer merge_counts to produce merged_counts.txt if patterns ever overlap
@@ -60,13 +43,13 @@ rule trim_fastq:
     input:
         fastq=lambda wildcards: get_fastq(wildcards.sample)
     output:
-        trimmed=lambda wildcards: get_trimmed_fastq(wildcards.sample)
+        trimmed="results/trimmed/{sample}_trimmed.fastq.gz"
     conda:
         "envs/env_python.yaml"
     params:
         length=20
     log:
-        lambda wildcards: f"results/qc/logs/{wildcards.sample}_trim.log"
+        "results/qc/logs/{sample}_trim.log"
     shell:
         """
         python scripts/trim_fastq.py \
@@ -80,7 +63,7 @@ rule trim_fastq:
 # Rule: Quality control with FastQC
 rule fastqc:
     input:
-        fastq=lambda wildcards: get_trimmed_fastq(wildcards.sample)
+        fastq="results/trimmed/{sample}_trimmed.fastq.gz"
     output:
         html="results/qc/{sample}_fastqc.html",
         zip="results/qc/{sample}_fastqc.zip"
@@ -98,7 +81,7 @@ rule fastqc:
 # Rule: Extract and count sgRNA sequences
 rule count_sgrnas:
     input:
-        fastq=lambda wildcards: get_trimmed_fastq(wildcards.sample),
+        fastq="results/trimmed/{sample}_trimmed.fastq.gz",
         library=config["library"]["file"]
     output:
         counts="results/counts/samples/{sample}.counts.txt"
