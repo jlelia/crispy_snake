@@ -13,6 +13,9 @@ configfile: "config.yaml"
 SAMPLES = [s["name"] for s in config["samples"]]
 COMPARISONS = [c["name"] for c in config.get("comparisons", [])]
 
+# Prefer merge_counts to produce merged_counts.txt if patterns ever overlap
+ruleorder: merge_counts > count_sgrnas
+
 # Target rule - defines all final outputs
 rule all:
     input:
@@ -52,7 +55,7 @@ rule count_sgrnas:
         fastq=lambda wildcards: [s["fastq"] for s in config["samples"] if s["name"] == wildcards.sample][0],
         library=config["library"]["file"]
     output:
-        counts="results/counts/{sample}_counts.txt"
+        counts="results/counts/samples/{sample}.counts.txt"
     conda:
         "envs/env_python.yaml"
     params:
@@ -73,7 +76,7 @@ rule count_sgrnas:
 # Rule: Merge count tables from all samples
 rule merge_counts:
     input:
-        counts=expand("results/counts/{sample}_counts.txt", sample=SAMPLES)
+        counts=expand("results/counts/samples/{sample}.counts.txt", sample=SAMPLES)
     output:
         merged="results/counts/merged_counts.txt"
     conda:
