@@ -25,9 +25,9 @@ def merge_count_tables(count_files, output_file):
         # Handle both {sample}.counts.txt and {sample}_counts.txt patterns
         sample_name = Path(count_file).stem
         if sample_name.endswith(".counts"):
-            sample_name = sample_name[:-7]  # Remove ".counts"
+            sample_name = sample_name[:-len(".counts")]
         elif sample_name.endswith("_counts"):
-            sample_name = sample_name[:-7]  # Remove "_counts"
+            sample_name = sample_name[:-len("_counts")]
         
         # Read count file
         df = pd.read_csv(count_file, sep="\t")

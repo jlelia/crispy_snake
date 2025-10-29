@@ -158,7 +158,7 @@ def run_drugz(count_file, treatment_samples, control_samples,
     # Sort by normZ score (most depleted first)
     results_df = results_df.sort_values("normZ")
     
-    # Create output directory if it doesn't exist
+    # Create output directory for results file if it doesn't exist
     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     
     # Write results
