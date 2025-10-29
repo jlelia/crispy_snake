@@ -13,7 +13,7 @@ configfile: "config.yaml"
 # ============================================================================
 # Validation: Enforce naming conventions (no spaces allowed)
 # ============================================================================
-# Only alphanumeric, dot, underscore, and dash are allowed: ^[A-Za-z0-9._-]+$
+# Only alphanumeric, dot, underscore, and dash are allowed: r'^[A-Za-z0-9._-]+$'
 VALID_NAME_PATTERN = re.compile(r'^[A-Za-z0-9._-]+$')
 
 def validate_name(name, field_description):
@@ -57,10 +57,14 @@ for comparison in config["comparisons"]:
         validate_name(label, f"control label in comparison '{comparison['name']}'")
 
 # Validate sample names (if samples exist)
-if "samples" in config and isinstance(config["samples"], list):
+if "samples" in config:
+    if not isinstance(config["samples"], list):
+        raise ValueError("'samples' must be a list.")
+    
     for sample in config["samples"]:
-        if "name" in sample:
-            validate_name(sample["name"], "sample name")
+        if "name" not in sample:
+            raise ValueError(f"Sample missing 'name' field: {sample}")
+        validate_name(sample["name"], "sample name")
 
 # Extract sample names
 SAMPLES = [s["name"] for s in config["samples"]]
