@@ -4,10 +4,63 @@ Processes FASTQ files through QC, counting, and differential analysis
 """
 
 import os
+import re
 from pathlib import Path
 
 # Load configuration
 configfile: "config.yaml"
+
+# ============================================================================
+# Validation: Enforce naming conventions (no spaces allowed)
+# ============================================================================
+# Only alphanumeric, dot, underscore, and dash are allowed: ^[A-Za-z0-9._-]+$
+VALID_NAME_PATTERN = re.compile(r'^[A-Za-z0-9._-]+$')
+
+def validate_name(name, field_description):
+    """Validate that a name matches the allowed pattern."""
+    if not VALID_NAME_PATTERN.match(name):
+        raise ValueError(
+            f"Invalid {field_description}: '{name}'. "
+            f"Names must contain only letters, numbers, dots (.), underscores (_), and dashes (-). "
+            f"Spaces and other special characters are not allowed."
+        )
+
+# Validate comparisons
+if "comparisons" not in config:
+    raise ValueError("Configuration must include 'comparisons' section.")
+
+if not isinstance(config["comparisons"], list):
+    raise ValueError("'comparisons' must be a list.")
+
+for comparison in config["comparisons"]:
+    # Check required fields
+    if "name" not in comparison:
+        raise ValueError(f"Comparison missing 'name' field: {comparison}")
+    if "treatment" not in comparison:
+        raise ValueError(f"Comparison '{comparison.get('name', 'unknown')}' missing 'treatment' field.")
+    if "control" not in comparison:
+        raise ValueError(f"Comparison '{comparison.get('name', 'unknown')}' missing 'control' field.")
+    
+    # Validate comparison name
+    validate_name(comparison["name"], f"comparison name")
+    
+    # Validate treatment labels
+    if not isinstance(comparison["treatment"], list):
+        raise ValueError(f"Comparison '{comparison['name']}': 'treatment' must be a list.")
+    for label in comparison["treatment"]:
+        validate_name(label, f"treatment label in comparison '{comparison['name']}'")
+    
+    # Validate control labels
+    if not isinstance(comparison["control"], list):
+        raise ValueError(f"Comparison '{comparison['name']}': 'control' must be a list.")
+    for label in comparison["control"]:
+        validate_name(label, f"control label in comparison '{comparison['name']}'")
+
+# Validate sample names (if samples exist)
+if "samples" in config and isinstance(config["samples"], list):
+    for sample in config["samples"]:
+        if "name" in sample:
+            validate_name(sample["name"], "sample name")
 
 # Extract sample names
 SAMPLES = [s["name"] for s in config["samples"]]
@@ -137,12 +190,12 @@ rule mageck_test:
         "results/mageck/logs/{comparison}_mageck.log"
     shell:
         """
-        mkdir -p results/mageck/logs
+        mkdir -p results/mageck results/mageck/logs
         mageck test \
             -k {input.counts} \
             -t {params.treatment} \
             -c {params.control} \
-            -n "results/mageck/{wildcards.comparison}" \
+            -n results/mageck/{wildcards.comparison} \
             --norm-method {params.norm_method} \
             --gene-test-fdr-threshold {params.fdr} \
             2>&1 | tee "{log}"
