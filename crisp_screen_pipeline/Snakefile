@@ -13,6 +13,13 @@ configfile: "config.yaml"
 SAMPLES = [s["name"] for s in config["samples"]]
 COMPARISONS = [c["name"] for c in config.get("comparisons", [])]
 
+
+# Helper function to get original FASTQ path
+def get_fastq(sample):
+    """Get the original FASTQ path for a sample"""
+    return [s["fastq"] for s in config["samples"] if s["name"] == sample][0]
+
+
 # Prefer merge_counts to produce merged_counts.txt if patterns ever overlap
 ruleorder: merge_counts > count_sgrnas
 
@@ -31,10 +38,32 @@ rule all:
         "results/reports/analysis_summary.html" if config.get("output", {}).get("generate_reports", True) else []
 
 
+# Rule: Trim FASTQ reads to guide length (20bp)
+rule trim_fastq:
+    input:
+        fastq=lambda wildcards: get_fastq(wildcards.sample)
+    output:
+        trimmed="results/trimmed/{sample}_trimmed.fastq.gz"
+    conda:
+        "envs/env_python.yaml"
+    params:
+        length=20
+    log:
+        "results/qc/logs/{sample}_trim.log"
+    shell:
+        """
+        python scripts/trim_fastq.py \
+            --input {input.fastq} \
+            --output {output.trimmed} \
+            --length {params.length} \
+            2>&1 | tee {log}
+        """
+
+
 # Rule: Quality control with FastQC
 rule fastqc:
     input:
-        fastq=lambda wildcards: [s["fastq"] for s in config["samples"] if s["name"] == wildcards.sample][0]
+        fastq="results/trimmed/{sample}_trimmed.fastq.gz"
     output:
         html="results/qc/{sample}_fastqc.html",
         zip="results/qc/{sample}_fastqc.zip"
@@ -52,7 +81,7 @@ rule fastqc:
 # Rule: Extract and count sgRNA sequences
 rule count_sgrnas:
     input:
-        fastq=lambda wildcards: [s["fastq"] for s in config["samples"] if s["name"] == wildcards.sample][0],
+        fastq="results/trimmed/{sample}_trimmed.fastq.gz",
         library=config["library"]["file"]
     output:
         counts="results/counts/samples/{sample}.counts.txt"
