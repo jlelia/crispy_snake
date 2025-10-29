@@ -30,6 +30,9 @@ env/
 .snakemake/
 *.log
 
+# Test configurations (keep only main config)
+crisp_screen_pipeline/config_test.yaml
+
 # Data files (large files should not be committed)
 crisp_screen_pipeline/data/fastq/*.fastq
 crisp_screen_pipeline/data/fastq/*.fastq.gz
@@ -45,6 +48,7 @@ crisp_screen_pipeline/results/counts/*
 crisp_screen_pipeline/results/mageck/*
 crisp_screen_pipeline/results/drugz/*
 crisp_screen_pipeline/results/reports/*
+crisp_screen_pipeline/results/trimmed/*
 !crisp_screen_pipeline/results/*/.gitkeep
 
 # IDE
