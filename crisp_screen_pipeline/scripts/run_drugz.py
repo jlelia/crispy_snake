@@ -149,9 +149,10 @@ def run_drugz(count_file, treatment_samples, control_samples,
     results_df = pd.DataFrame(results)
     
     # Calculate FDR using Benjamini-Hochberg
-    from scipy.stats import false_discovery_control
+    from statsmodels.stats.multitest import multipletests
     if len(results_df) > 0:
-        results_df["fdr"] = false_discovery_control(results_df["pvalue"].values)
+        reject, qvals, _, _ = multipletests(results_df["pvalue"].values, method="fdr_bh")
+        results_df["fdr"] = qvals
     else:
         results_df["fdr"] = []
     
