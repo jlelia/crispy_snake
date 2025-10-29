@@ -27,7 +27,7 @@ ruleorder: merge_counts > count_sgrnas
 rule all:
     input:
         # Quality control reports
-        expand("results/qc/{sample}_fastqc.html", sample=SAMPLES),
+        expand("results/qc/{sample}_trimmed_fastqc.html", sample=SAMPLES),
         # Count tables
         "results/counts/merged_counts.txt",
         # MAGeCK results
@@ -65,8 +65,8 @@ rule fastqc:
     input:
         fastq="results/trimmed/{sample}_trimmed.fastq.gz"
     output:
-        html="results/qc/{sample}_fastqc.html",
-        zip="results/qc/{sample}_fastqc.zip"
+        html="results/qc/{sample}_trimmed_fastqc.html",
+        zip="results/qc/{sample}_trimmed_fastqc.zip"
     conda:
         "envs/env_qc.yaml"
     threads: 2
