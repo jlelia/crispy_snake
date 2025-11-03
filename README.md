@@ -1,6 +1,6 @@
-# CRISPR Screen Analysis Pipeline
+# crispy_snake
 
-A comprehensive Snakemake pipeline for analyzing CRISPR knockout screening data. This pipeline processes raw FASTQ files through quality control, sgRNA counting, and statistical analysis using MAGeCK and DrugZ.
+A Snakemake pipeline for analyzing CRISPR knockout screening data. This pipeline processes raw FASTQ files through quality control, sgRNA counting, and statistical analysis using MAGeCK and DrugZ.
 
 ## Features
 
@@ -16,19 +16,19 @@ A comprehensive Snakemake pipeline for analyzing CRISPR knockout screening data.
 
 ```
 crispr_screen_pipeline/
-├── config.yaml              # Main configuration file
-├── Snakefile               # Workflow definition
-├── envs/                   # Conda environment specifications
+├── config.yaml            # Main configuration file
+├── Snakefile              # Workflow definition
+├── envs/                  # Conda environment specifications
 │   ├── env_qc.yaml        # FastQC environment
 │   ├── env_mageck.yaml    # MAGeCK environment
 │   └── env_python.yaml    # Python analysis environment
-├── scripts/                # Analysis scripts
+├── scripts/               # Analysis scripts
 │   ├── merge_counts.py    # Merge count tables
 │   └── run_drugz.py       # DrugZ analysis
-├── data/                   # Input data directory
+├── data/                  # Input data directory
 │   ├── fastq/             # FASTQ files
 │   └── library/           # sgRNA library files
-└── results/                # Output directory
+└── results/               # Output directory
     ├── qc/                # Quality control reports
     ├── counts/            # Count tables
     ├── mageck/            # MAGeCK results
@@ -69,6 +69,8 @@ Names (sample names, comparison names, treatment/control labels) may only contai
 
 **Spaces and other special characters are NOT allowed.**
 
+Interestingly, sample names starting with numbers seems to break something in MAGeCK, though I did not investigate this thoroughly. If you are a little stitious, I recommend avoiding sample or comparison names starting with numbers.
+
 ### Valid Examples
 ```yaml
 ✓ control_rep1
@@ -86,6 +88,7 @@ Names (sample names, comparison names, treatment/control labels) may only contai
 ✗ MMC vs DMSO           # contains spaces
 ✗ treatment/control     # contains forward slash
 ✗ sample@A1             # contains @ symbol
+✗ 10uM_drug             # starts with number
 ```
 
 ### Why These Rules?
@@ -121,7 +124,7 @@ library:
 
 Library file format (tab-separated):
 ```
-sgRNA_ID    sequence    gene
+sgRNA_ID    sequence            gene
 sgRNA_1     ATCGATCGATCGATCG    GENE1
 sgRNA_2     GCTAGCTAGCTAGCTA    GENE1
 sgRNA_3     TTAATTAATTAATTAA    GENE2
@@ -298,8 +301,10 @@ This pipeline is provided under the MIT License. See LICENSE file for details.
 
 ## Support
 
-For issues, questions, or contributions, please open an issue on the GitHub repository.
+For issues, questions, or contributions, please open an issue on the GitHub repository or email me at james.elia@yale.edu.
 
 ## Authors
 
-Developed for CRISPR screening analysis workflows.
+James L. Elia developed this for CRISPR screening analysis workflows while a PhD candidate in the Bindra Lab at Yale University. You can find his website [here](https://jlelia.net).
+
+GitHub Copilot was used for structuring the workflow and debugging throughout.
