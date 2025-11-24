@@ -69,7 +69,7 @@ Names (sample names, comparison names, treatment/control labels) may only contai
 
 **Spaces and other special characters are NOT allowed.**
 
-Interestingly, sample names starting with numbers seems to break something in MAGeCK, though I did not investigate this thoroughly. If you are a little stitious, I recommend avoiding sample or comparison names starting with numbers.
+Interestingly, sample names starting with numbers seem to break something in MAGeCK, though I did not investigate this thoroughly. If you are a little stitious, I recommend avoiding sample or comparison names starting with numbers.
 
 ### Valid Examples
 ```yaml
@@ -93,7 +93,7 @@ Interestingly, sample names starting with numbers seems to break something in MA
 
 ### Why These Rules?
 
-The pipeline uses various bioinformatics tools (like MAGeCK RRA) that parse filenames and can break when encountering spaces or special characters. By enforcing these naming conventions early, we prevent pipeline failures and ensure reliable analysis.
+The pipeline uses various bioinformatics tools (like MAGeCK RRA) that parse filenames and can break when encountering spaces or special characters. By enforcing these naming conventions early, we prevent external failures.
 
 **The pipeline will validate all names at startup and fail immediately with a clear error message if any invalid characters are detected.**
 
